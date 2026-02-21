@@ -1,0 +1,111 @@
+:root {
+  color-scheme: dark;
+  --bg: #15161b;
+  --panel: #1f2230;
+  --text: #e8ecf4;
+  --muted: #b1bbcf;
+  --accent: #79a8ff;
+  --accent-2: #5e7bc4;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  background: radial-gradient(circle at top, #252a3a 0%, var(--bg) 45%);
+  color: var(--text);
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+}
+
+.app {
+  width: min(900px, 100%);
+  background: color-mix(in oklab, var(--panel), black 8%);
+  border: 1px solid #333a50;
+  border-radius: 14px;
+  padding: 1.25rem;
+  display: grid;
+  gap: 1.25rem;
+}
+
+h1,
+.subtitle {
+  margin: 0;
+}
+
+.subtitle {
+  color: var(--muted);
+}
+
+.controls,
+.field {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.controls {
+  gap: 1rem;
+}
+
+.field small {
+  color: var(--muted);
+}
+
+input[type='file'],
+input[type='range'],
+button,
+select {
+  width: 100%;
+}
+
+select {
+  background: #131725;
+  color: var(--text);
+  border: 1px solid #3f4760;
+  border-radius: 8px;
+  padding: 0.55rem;
+}
+
+.button-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(120px, 1fr));
+  gap: 0.75rem;
+}
+
+button {
+  border: 1px solid #4b5470;
+  background: linear-gradient(180deg, var(--accent), var(--accent-2));
+  color: white;
+  font-weight: 700;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.canvas-wrap {
+  background: #0f1118;
+  border-radius: 12px;
+  border: 1px solid #313850;
+  padding: 0.75rem;
+  display: grid;
+  place-items: center;
+}
+
+#spriteCanvas {
+  width: min(100%, 512px);
+  height: auto;
+  image-rendering: pixelated;
+  background-color: #181a26;
+  border: 1px solid #363d57;
+  border-radius: 8px;
+}

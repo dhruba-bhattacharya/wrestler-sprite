@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sprite Maker</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <h1>Sprite Maker</h1>
+      <p class="subtitle">Upload an image, choose sprite mode, adjust detail, generate variants, and save.</p>
+
+      <section class="controls">
+        <label class="field">
+          <span>Upload image</span>
+          <input id="imageInput" type="file" accept="image/*" />
+        </label>
+
+        <label class="field">
+          <span>Sprite style</span>
+          <select id="styleSelect">
+            <option value="stylized">Stylized Pixel Art</option>
+            <option value="faithful">Faithful Similar Sprite</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Detail level: <strong id="detailLabel">50</strong></span>
+          <input id="detailSlider" type="range" min="1" max="100" value="50" />
+          <small>Left = simpler sprite, Right = more detail</small>
+        </label>
+
+        <div class="button-row">
+          <button id="randomButton" type="button">Random Variant</button>
+          <button id="restoreButton" type="button" disabled>Back to Original</button>
+          <button id="saveButton" type="button" disabled>Save Sprite</button>
+        </div>
+      </section>
+
+      <section class="canvas-wrap">
+        <canvas id="spriteCanvas" width="256" height="256" aria-label="Sprite canvas"></canvas>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
