@@ -9,12 +9,20 @@
   <body>
     <main class="app">
       <h1>Sprite Maker</h1>
-      <p class="subtitle">Upload an image, tune detail, generate variants, and save your sprite.</p>
+      <p class="subtitle">Upload an image, choose sprite mode, adjust detail, generate variants, and save.</p>
 
       <section class="controls">
         <label class="field">
           <span>Upload image</span>
           <input id="imageInput" type="file" accept="image/*" />
+        </label>
+
+        <label class="field">
+          <span>Sprite style</span>
+          <select id="styleSelect">
+            <option value="stylized">Stylized Pixel Art</option>
+            <option value="faithful">Faithful Similar Sprite</option>
+          </select>
         </label>
 
         <label class="field">
@@ -24,7 +32,8 @@
         </label>
 
         <div class="button-row">
-          <button id="randomButton" type="button">Random Sprite</button>
+          <button id="randomButton" type="button">Random Variant</button>
+          <button id="restoreButton" type="button" disabled>Back to Original</button>
           <button id="saveButton" type="button" disabled>Save Sprite</button>
         </div>
       </section>
