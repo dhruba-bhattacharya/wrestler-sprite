@@ -3,37 +3,39 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sprite Maker</title>
+    <title>Wrestler Sprite Maker</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <main class="app">
-      <h1>Sprite Maker</h1>
-      <p class="subtitle">Upload an image, choose sprite mode, adjust detail, generate variants, and save.</p>
+      <h1>Wrestler Sprite Maker</h1>
+      <p class="subtitle">Search a wrestler, auto-pick a reference photo, and generate a detailed retro sprite style like your sample.</p>
 
       <section class="controls">
+        <div class="search-row">
+          <label class="field grow" for="wrestlerInput">
+            <span>Wrestler name</span>
+            <input id="wrestlerInput" type="text" placeholder="John Cena" />
+          </label>
+          <button id="searchButton" type="button">Search & Build</button>
+        </div>
+
+        <p id="statusText" class="status" aria-live="polite">Tip: You can also upload your own photo below.</p>
+
         <label class="field">
-          <span>Upload image</span>
+          <span>Upload image (optional)</span>
           <input id="imageInput" type="file" accept="image/*" />
         </label>
 
         <label class="field">
-          <span>Sprite style</span>
-          <select id="styleSelect">
-            <option value="stylized">Stylized Pixel Art</option>
-            <option value="faithful">Faithful Similar Sprite</option>
-          </select>
-        </label>
-
-        <label class="field">
-          <span>Detail level: <strong id="detailLabel">50</strong></span>
-          <input id="detailSlider" type="range" min="1" max="100" value="50" />
-          <small>Left = simpler sprite, Right = more detail</small>
+          <span>Sprite detail: <strong id="detailLabel">84</strong></span>
+          <input id="detailSlider" type="range" min="70" max="100" value="84" />
+          <small>Higher keeps more details in the same retro style.</small>
         </label>
 
         <div class="button-row">
           <button id="randomButton" type="button">Random Variant</button>
-          <button id="restoreButton" type="button" disabled>Back to Original</button>
+          <button id="restoreButton" type="button" disabled>Back to Reference</button>
           <button id="saveButton" type="button" disabled>Save Sprite</button>
         </div>
       </section>
