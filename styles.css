@@ -6,6 +6,8 @@
   --muted: #b1bbcf;
   --accent: #79a8ff;
   --accent-2: #5e7bc4;
+  --ok: #8be28b;
+  --error: #ff8a8a;
 }
 
 * {
@@ -24,7 +26,7 @@ body {
 }
 
 .app {
-  width: min(900px, 100%);
+  width: min(920px, 100%);
   background: color-mix(in oklab, var(--panel), black 8%);
   border: 1px solid #333a50;
   border-radius: 14px;
@@ -56,13 +58,39 @@ h1,
   color: var(--muted);
 }
 
+.search-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.grow {
+  flex: 1;
+}
+
+.status {
+  margin: 0;
+  color: var(--muted);
+  min-height: 1.25rem;
+}
+
+.status[data-type='ok'] {
+  color: var(--ok);
+}
+
+.status[data-type='error'] {
+  color: var(--error);
+}
+
 input[type='file'],
 input[type='range'],
+input[type='text'],
 button,
 select {
   width: 100%;
 }
 
+input[type='text'],
 select {
   background: #131725;
   color: var(--text);
@@ -108,4 +136,15 @@ button:disabled {
   background-color: #181a26;
   border: 1px solid #363d57;
   border-radius: 8px;
+}
+
+@media (max-width: 680px) {
+  .search-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .button-row {
+    grid-template-columns: 1fr;
+  }
 }
