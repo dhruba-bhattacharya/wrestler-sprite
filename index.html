@@ -9,7 +9,7 @@
   <body>
     <main class="app">
       <h1>Wrestler Sprite Maker</h1>
-      <p class="subtitle">Search a wrestler, auto-pick a reference photo, and generate a simplified upper-body pixel sprite.</p>
+      <p class="subtitle">Search a wrestler, auto-pick a reference photo, and generate a detailed retro sprite style like your sample.</p>
 
       <section class="controls">
         <div class="search-row">
@@ -28,17 +28,9 @@
         </label>
 
         <label class="field">
-          <span>Sprite style</span>
-          <select id="styleSelect">
-            <option value="stylized">Stylized Pixel Art</option>
-            <option value="faithful">Closer Match</option>
-          </select>
-        </label>
-
-        <label class="field">
-          <span>Detail level: <strong id="detailLabel">40</strong></span>
-          <input id="detailSlider" type="range" min="1" max="100" value="40" />
-          <small>Lower values make the likeness looser to keep it more generic.</small>
+          <span>Sprite detail: <strong id="detailLabel">84</strong></span>
+          <input id="detailSlider" type="range" min="70" max="100" value="84" />
+          <small>Higher keeps more details in the same retro style.</small>
         </label>
 
         <div class="button-row">

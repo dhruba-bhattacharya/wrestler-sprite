@@ -2,7 +2,6 @@ const imageInput = document.getElementById('imageInput');
 const wrestlerInput = document.getElementById('wrestlerInput');
 const searchButton = document.getElementById('searchButton');
 const statusText = document.getElementById('statusText');
-const styleSelect = document.getElementById('styleSelect');
 const detailSlider = document.getElementById('detailSlider');
 const detailLabel = document.getElementById('detailLabel');
 const randomButton = document.getElementById('randomButton');
@@ -11,11 +10,30 @@ const saveButton = document.getElementById('saveButton');
 const canvas = document.getElementById('spriteCanvas');
 const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
-const sourceCanvas = document.createElement('canvas');
-const sourceCtx = sourceCanvas.getContext('2d', { willReadFrequently: true });
+const workCanvas = document.createElement('canvas');
+const workCtx = workCanvas.getContext('2d', { willReadFrequently: true });
 
 let sourceImage = null;
 let originalImage = null;
+
+const retroPalette = [
+  [18, 18, 24],
+  [41, 42, 55],
+  [74, 79, 97],
+  [122, 127, 145],
+  [215, 171, 133],
+  [189, 138, 101],
+  [159, 110, 78],
+  [250, 216, 182],
+  [44, 30, 22],
+  [84, 63, 47],
+  [50, 73, 130],
+  [74, 108, 184],
+  [185, 157, 64],
+  [222, 191, 96],
+  [238, 239, 243],
+  [12, 12, 16],
+];
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -26,121 +44,146 @@ function setStatus(message, type = 'muted') {
   statusText.dataset.type = type;
 }
 
-function mapDetailToPixelSize(detail, style) {
-  if (style === 'faithful') {
-    return Math.max(3, Math.round(20 - detail * 0.14));
-  }
+function drawPlaceholder() {
+  ctx.fillStyle = '#1a1708';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  return Math.max(5, Math.round(56 - detail * 0.48));
+  const gradient = ctx.createRadialGradient(128, 100, 20, 128, 120, 160);
+  gradient.addColorStop(0, '#6f6b26');
+  gradient.addColorStop(1, '#2a270f');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = '#ece9d2';
+  ctx.font = 'bold 15px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Search a wrestler to generate a detailed retro sprite', canvas.width / 2, canvas.height / 2);
+
+  saveButton.disabled = true;
+  restoreButton.disabled = true;
 }
 
-function mapDetailToColorLevels(detail, style) {
-  if (style === 'faithful') {
-    return Math.max(6, Math.round(5 + detail * 0.18));
-  }
+function nearestPaletteColor(r, g, b) {
+  let best = retroPalette[0];
+  let bestDist = Number.POSITIVE_INFINITY;
 
-  return Math.max(3, Math.round(2 + detail * 0.1));
-}
+  for (const color of retroPalette) {
+    const dr = r - color[0];
+    const dg = g - color[1];
+    const db = b - color[2];
+    const dist = dr * dr + dg * dg + db * db;
 
-function quantize(value, levels) {
-  const step = 255 / Math.max(1, levels - 1);
-  return Math.round(value / step) * step;
-}
-
-function fitToCanvas(image, targetWidth, targetHeight) {
-  const ratio = Math.min(targetWidth / image.width, targetHeight / image.height);
-  const width = Math.max(1, Math.round(image.width * ratio));
-  const height = Math.max(1, Math.round(image.height * ratio));
-  const x = Math.round((targetWidth - width) / 2);
-  const y = Math.round((targetHeight - height) / 2);
-  return { x, y, width, height };
-}
-
-function getBlockColor(data, width, sourceHeight, startX, startY, blockSize, mode) {
-  if (mode === 'stylized') {
-    const idx = ((startY * width) + startX) * 4;
-    return [data[idx], data[idx + 1], data[idx + 2], data[idx + 3]];
-  }
-
-  let r = 0;
-  let g = 0;
-  let b = 0;
-  let a = 0;
-  let count = 0;
-
-  for (let y = startY; y < Math.min(startY + blockSize, sourceHeight); y += 1) {
-    for (let x = startX; x < Math.min(startX + blockSize, width); x += 1) {
-      const idx = ((y * width) + x) * 4;
-      r += data[idx];
-      g += data[idx + 1];
-      b += data[idx + 2];
-      a += data[idx + 3];
-      count += 1;
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = color;
     }
   }
 
-  return [r / count, g / count, b / count, a / count];
+  return best;
 }
 
-function renderSprite() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+function renderDetailedSprite(image) {
+  const detail = Number(detailSlider.value);
+  const spriteW = clamp(Math.round(30 + detail * 0.25), 44, 56);
+  const spriteH = clamp(Math.round(42 + detail * 0.34), 64, 82);
 
-  if (!sourceImage) {
-    drawPlaceholder();
-    return;
+  workCanvas.width = spriteW;
+  workCanvas.height = spriteH;
+
+  workCtx.imageSmoothingEnabled = true;
+
+  const srcRatio = image.width / image.height;
+  const targetRatio = spriteW / spriteH;
+
+  let sx = 0;
+  let sy = 0;
+  let sw = image.width;
+  let sh = image.height;
+
+  if (srcRatio > targetRatio) {
+    sw = image.height * targetRatio;
+    sx = (image.width - sw) / 2;
+  } else {
+    sh = image.width / targetRatio;
+    sy = image.height * 0.05;
+    if (sy + sh > image.height) {
+      sy = image.height - sh;
+    }
   }
 
-  const detail = Number(detailSlider.value);
-  const style = styleSelect.value;
-  const pixelSize = mapDetailToPixelSize(detail, style);
-  const colorLevels = mapDetailToColorLevels(detail, style);
+  workCtx.clearRect(0, 0, spriteW, spriteH);
+  workCtx.drawImage(image, sx, sy, sw, sh, 0, 0, spriteW, spriteH);
 
-  const fit = fitToCanvas(sourceImage, canvas.width, canvas.height);
-  sourceCanvas.width = fit.width;
-  sourceCanvas.height = fit.height;
-  sourceCtx.clearRect(0, 0, sourceCanvas.width, sourceCanvas.height);
-  sourceCtx.drawImage(sourceImage, 0, 0, fit.width, fit.height);
-
-  const imageData = sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
+  const imageData = workCtx.getImageData(0, 0, spriteW, spriteH);
   const data = imageData.data;
 
-  for (let y = 0; y < sourceCanvas.height; y += pixelSize) {
-    for (let x = 0; x < sourceCanvas.width; x += pixelSize) {
-      const [pr, pg, pb, pa] = getBlockColor(data, sourceCanvas.width, sourceCanvas.height, x, y, pixelSize, style);
-      const r = quantize(pr, colorLevels);
-      const g = quantize(pg, colorLevels);
-      const b = quantize(pb, colorLevels);
-      const a = pa / 255;
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
 
-      ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${a})`;
-      ctx.fillRect(fit.x + x, fit.y + y, pixelSize, pixelSize);
+    const boostedR = clamp((r - 110) * 1.22 + 110, 0, 255);
+    const boostedG = clamp((g - 110) * 1.22 + 110, 0, 255);
+    const boostedB = clamp((b - 110) * 1.22 + 110, 0, 255);
+
+    const paletteColor = nearestPaletteColor(boostedR, boostedG, boostedB);
+    data[i] = paletteColor[0];
+    data[i + 1] = paletteColor[1];
+    data[i + 2] = paletteColor[2];
+  }
+
+  for (let y = 1; y < spriteH - 1; y += 1) {
+    for (let x = 1; x < spriteW - 1; x += 1) {
+      const idx = (y * spriteW + x) * 4;
+      const left = (y * spriteW + (x - 1)) * 4;
+      const right = (y * spriteW + (x + 1)) * 4;
+      const top = ((y - 1) * spriteW + x) * 4;
+      const bottom = ((y + 1) * spriteW + x) * 4;
+
+      const currentLum = data[idx] * 0.2126 + data[idx + 1] * 0.7152 + data[idx + 2] * 0.0722;
+      const neighborLum =
+        (data[left] + data[right] + data[top] + data[bottom]) * 0.2126 / 4 +
+        (data[left + 1] + data[right + 1] + data[top + 1] + data[bottom + 1]) * 0.7152 / 4 +
+        (data[left + 2] + data[right + 2] + data[top + 2] + data[bottom + 2]) * 0.0722 / 4;
+
+      if (Math.abs(currentLum - neighborLum) > 24 && currentLum < neighborLum) {
+        data[idx] = Math.max(0, data[idx] - 28);
+        data[idx + 1] = Math.max(0, data[idx + 1] - 28);
+        data[idx + 2] = Math.max(0, data[idx + 2] - 28);
+      }
     }
   }
+
+  workCtx.putImageData(imageData, 0, 0);
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.imageSmoothingEnabled = false;
+
+  const scale = Math.floor(Math.min(canvas.width / spriteW, canvas.height / spriteH));
+  const renderW = spriteW * scale;
+  const renderH = spriteH * scale;
+  const dx = Math.floor((canvas.width - renderW) / 2);
+  const dy = Math.floor((canvas.height - renderH) / 2);
+
+  const gradient = ctx.createRadialGradient(canvas.width / 2, canvas.height / 3, 10, canvas.width / 2, canvas.height / 2, canvas.width / 1.7);
+  gradient.addColorStop(0, '#7e7724');
+  gradient.addColorStop(1, '#29260f');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.drawImage(workCanvas, dx, dy, renderW, renderH);
 
   saveButton.disabled = false;
   restoreButton.disabled = !originalImage || sourceImage === originalImage;
 }
 
-function drawPlaceholder() {
-  ctx.fillStyle = '#111422';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  ctx.fillStyle = '#2b3148';
-  for (let y = 0; y < canvas.height; y += 16) {
-    for (let x = 0; x < canvas.width; x += 16) {
-      if ((x + y) % 32 === 0) {
-        ctx.fillRect(x, y, 16, 16);
-      }
-    }
+function renderSprite() {
+  if (!sourceImage) {
+    drawPlaceholder();
+    return;
   }
 
-  ctx.fillStyle = '#d5def4';
-  ctx.font = 'bold 16px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('Search a wrestler or upload an image', canvas.width / 2, canvas.height / 2);
-
-  saveButton.disabled = true;
-  restoreButton.disabled = true;
+  renderDetailedSprite(sourceImage);
 }
 
 function applyImage(img, makeOriginal = false) {
@@ -155,34 +198,6 @@ function imageFromCanvas(localCanvas) {
   const img = new Image();
   img.src = localCanvas.toDataURL('image/png');
   return img;
-}
-
-function createUpperBodyImage(img) {
-  const cropCanvas = document.createElement('canvas');
-  const cropCtx = cropCanvas.getContext('2d');
-
-  const cropWidth = Math.round(img.width * 0.72);
-  const cropHeight = Math.round(img.height * 0.68);
-  const startX = Math.round((img.width - cropWidth) / 2);
-  const startY = Math.round(img.height * 0.08);
-
-  cropCanvas.width = Math.max(1, cropWidth);
-  cropCanvas.height = Math.max(1, cropHeight);
-
-  cropCtx.drawImage(
-    img,
-    clamp(startX, 0, img.width - 1),
-    clamp(startY, 0, img.height - 1),
-    cropCanvas.width,
-    cropCanvas.height,
-    0,
-    0,
-    cropCanvas.width,
-    cropCanvas.height,
-  );
-
-  const upperBody = imageFromCanvas(cropCanvas);
-  upperBody.onload = () => applyImage(upperBody, true);
 }
 
 function loadImageFromUrl(url) {
@@ -230,8 +245,8 @@ function loadImageFromFile(file) {
   reader.onload = () => {
     const img = new Image();
     img.onload = () => {
-      createUpperBodyImage(img);
-      setStatus('Loaded your uploaded image and built an upper-body sprite reference.', 'ok');
+      applyImage(img, true);
+      setStatus('Loaded your image and rendered it in the detailed retro style.', 'ok');
     };
     img.src = reader.result;
   };
@@ -251,8 +266,8 @@ async function searchAndBuildSprite() {
   try {
     const imageUrl = await fetchWrestlerImageUrl(name);
     const image = await loadImageFromUrl(imageUrl);
-    createUpperBodyImage(image);
-    setStatus(`Built a simplified sprite reference for ${name}.`, 'ok');
+    applyImage(image, true);
+    setStatus(`Built a detailed retro sprite for ${name}.`, 'ok');
   } catch (error) {
     setStatus(error.message || 'Something went wrong while searching.', 'error');
   } finally {
@@ -261,21 +276,20 @@ async function searchAndBuildSprite() {
 }
 
 function generateSourceBasedVariant() {
-  const size = 48;
+  const w = workCanvas.width || 50;
+  const h = workCanvas.height || 72;
   const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = w;
+  tempCanvas.height = h;
   const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
-  tempCanvas.width = size;
-  tempCanvas.height = size;
 
-  tempCtx.drawImage(originalImage, 0, 0, size, size);
-  const imageData = tempCtx.getImageData(0, 0, size, size);
+  tempCtx.drawImage(originalImage, 0, 0, w, h);
+  const imageData = tempCtx.getImageData(0, 0, w, h);
   const data = imageData.data;
 
-  const mutationRate = clamp(0.08 + (100 - Number(detailSlider.value)) / 190, 0.08, 0.4);
-
   for (let i = 0; i < data.length; i += 4) {
-    if (Math.random() < mutationRate) {
-      const shift = Math.round((Math.random() - 0.5) * 60);
+    if (Math.random() < 0.08) {
+      const shift = Math.round((Math.random() - 0.5) * 30);
       data[i] = clamp(data[i] + shift, 0, 255);
       data[i + 1] = clamp(data[i + 1] + shift, 0, 255);
       data[i + 2] = clamp(data[i + 2] + shift, 0, 255);
@@ -283,35 +297,8 @@ function generateSourceBasedVariant() {
   }
 
   tempCtx.putImageData(imageData, 0, 0);
-
   const variant = imageFromCanvas(tempCanvas);
   variant.onload = () => applyImage(variant, false);
-}
-
-function generateProceduralSprite() {
-  const size = 32;
-  const randomCanvas = document.createElement('canvas');
-  const randomCtx = randomCanvas.getContext('2d');
-  randomCanvas.width = size;
-  randomCanvas.height = size;
-
-  const palette = ['#0f172a', '#5b647f', '#9ca3af', '#f1c27d', '#c68642', '#1f2937', '#374151', '#e5e7eb'];
-
-  randomCtx.clearRect(0, 0, size, size);
-
-  for (let y = 0; y < size; y += 1) {
-    for (let x = 0; x < size / 2; x += 1) {
-      const color = palette[Math.floor(Math.random() * palette.length)];
-      if (Math.random() > 0.2) {
-        randomCtx.fillStyle = color;
-        randomCtx.fillRect(x, y, 1, 1);
-        randomCtx.fillRect(size - x - 1, y, 1, 1);
-      }
-    }
-  }
-
-  const img = imageFromCanvas(randomCanvas);
-  img.onload = () => applyImage(img, true);
 }
 
 function generateRandomSprite() {
@@ -320,7 +307,7 @@ function generateRandomSprite() {
     return;
   }
 
-  generateProceduralSprite();
+  setStatus('Search or upload a wrestler image first.', 'error');
 }
 
 imageInput.addEventListener('change', (event) => {
@@ -340,19 +327,19 @@ detailSlider.addEventListener('input', () => {
   renderSprite();
 });
 
-styleSelect.addEventListener('change', renderSprite);
 randomButton.addEventListener('click', generateRandomSprite);
 
 restoreButton.addEventListener('click', () => {
   if (!originalImage) {
     return;
   }
+
   applyImage(originalImage, false);
 });
 
 saveButton.addEventListener('click', () => {
   const link = document.createElement('a');
-  link.download = `sprite-${Date.now()}.png`;
+  link.download = `wrestler-sprite-${Date.now()}.png`;
   link.href = canvas.toDataURL('image/png');
   link.click();
 });
